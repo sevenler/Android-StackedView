@@ -15,7 +15,7 @@ public class StackedView extends RelativeLayout {
 
 	private static final String TAG = "StackedViews";
 
-	private double threshold = 0.2;
+	private double threshold = 0.1;//手势滑动到height * threshold 后，自动滚动页面
 
 	private int duration = 250;
 
@@ -33,7 +33,7 @@ public class StackedView extends RelativeLayout {
 
 	private boolean isScrolling;
 
-	private boolean isScrollingRight;
+	private boolean isScrollingBottom;
 
 	private boolean isPrepared;
 
@@ -290,34 +290,34 @@ public class StackedView extends RelativeLayout {
 		current = n;
 	}
 
-	private void fixZzIndexLeft(float deltaX) {
-		debug("Fix to left, current: " + current);
+	private void fixZzIndexTop(float deltaX) {
+		debug("Fix to top, current: " + current);
 		RelativeLayout.LayoutParams params = (LayoutParams) views[current]
 				.getLayoutParams();
-		params.leftMargin -= deltaX;
-		params.rightMargin += deltaX;
+		params.topMargin -= deltaX;
+		params.bottomMargin += deltaX;
 		views[current].setLayoutParams(params);
-		if (params.leftMargin < 0) {
-			debug("Change to scrolling to right.");
-			isScrollingRight = true;
-			prepareScrollingToRight();
+		if (params.topMargin < 0) {
+			debug("Change to scrolling to bottom.");
+			isScrollingBottom = true;
+			prepareScrollingToBottom();
 		}
 	}
 
-	private void prepareScrollingToRight() {
+	private void prepareScrollingToBottom() {
 		if (topPage == current - 1) {
 			// TODO
 		}
-		debug("Prepared Scrolling To Right");
+		debug("Prepared Scrolling To bottom");
 		RelativeLayout.LayoutParams params = (LayoutParams) views[current]
 				.getLayoutParams();
-		params.leftMargin = 0;
-		params.rightMargin = 0;
+		params.topMargin = 0;
+		params.bottomMargin = 0;
 		views[current].setLayoutParams(params);
 		if (current < size - 1) {
 			params = (LayoutParams) views[current + 1].getLayoutParams();
-			params.leftMargin = views[current].getWidth();
-			params.rightMargin = -params.leftMargin;
+			params.topMargin = views[current].getWidth();
+			params.bottomMargin = -params.topMargin;
 			views[current].bringToFront();
 			views[current + 1].setLayoutParams(params);
 			views[current + 1].setVisibility(View.VISIBLE);
@@ -329,29 +329,29 @@ public class StackedView extends RelativeLayout {
 		this.isPrepared = true;
 	}
 
-	private void fixZzIndexRight(float deltaX) {
-		debug("Fix to right, current: " + current);
+	private void fixZzIndexBottom(float deltaX) {
+		debug("Fix to bottom, current: " + current);
 		// Move
 		if (current < size - 1) {
 			RelativeLayout.LayoutParams params = (LayoutParams) views[current + 1]
 					.getLayoutParams();
-			params.leftMargin -= deltaX;
-			params.rightMargin += deltaX;
+			params.topMargin -= deltaX;
+			params.bottomMargin += deltaX;
 			views[current + 1].setLayoutParams(params);
 			// Test
-			if (params.leftMargin > views[current].getWidth()) {
-				isScrollingRight = false;
-				prepareScrollingToLeft();
+			if (params.topMargin > views[current].getHeight()) {
+				isScrollingBottom = false;
+				prepareScrollingToTop();
 			}
 		} else {
-			isScrollingRight = false;
-			prepareScrollingToLeft();
+			isScrollingBottom = false;
+			prepareScrollingToTop();
 		}
 
 	}
 
-	private void prepareScrollingToLeft() {
-		debug("Prepared Scrolling To Left");
+	private void prepareScrollingToTop() {
+		debug("Prepared Scrolling To top");
 		if (current > 0) {
 			views[current - 1].bringToFront();
 			views[current - 1].setVisibility(View.VISIBLE);
@@ -366,34 +366,34 @@ public class StackedView extends RelativeLayout {
 	//根据deltaX实时滚动
 	private void fixZzIndex(float deltaX) {
 		debug("Moving and Fixing Index.");
-		boolean toLeft = deltaX < 0;
-		boolean toRight = deltaX > 0;
-		if (toRight) {
+		boolean toTop = deltaX < 0;
+		boolean toBottom = deltaX > 0;
+		if (toBottom) {
 			if (current >= size - 1) {
 				debug("Return because current>size-1");
 				return;
 			}
 		} else {
-			if (toLeft && current == 0) {
+			if (toTop && current == 0) {
 				debug("Return because current==0");
 				return;
 			}
 		}
 		if (!isPrepared) {
-			if (toRight) {
-				isScrollingRight = true;
-				prepareScrollingToRight();
+			if (toBottom) {
+				isScrollingBottom = true;
+				prepareScrollingToBottom();
 			} else {
-				if (toLeft) {
-					isScrollingRight = false;
-					prepareScrollingToLeft();
+				if (toTop) {
+					isScrollingBottom = false;
+					prepareScrollingToTop();
 				}
 			}
 		}
-		if (isPrepared && isScrollingRight) {
-			fixZzIndexRight(deltaX);
+		if (isPrepared && isScrollingBottom) {
+			fixZzIndexBottom(deltaX);
 		} else {
-			fixZzIndexLeft(deltaX);
+			fixZzIndexTop(deltaX);
 		}
 
 	}
@@ -403,20 +403,20 @@ public class StackedView extends RelativeLayout {
 	 * @return index if needs to snap, else return -1.返回可以滚动到的位置
 	 */
 	private int scrollTestInternal() {
-		final int width = views[current].getWidth();
-		if (isScrollingRight) {
+		final int height = views[current].getHeight();
+		if (isScrollingBottom) {
 			if (current >= size - 1) {
 				return -1;
 			}
 			RelativeLayout.LayoutParams params = (LayoutParams) views[current + 1]
 					.getLayoutParams();
-			if (Math.abs(params.leftMargin) <= width * (1 - threshold)) {
+			if (Math.abs(params.topMargin) <= height * (1 - threshold)) {
 				return current < size - 1 ? current + 1 : current;
 			}
 		} else {
 			RelativeLayout.LayoutParams params = (LayoutParams) views[current]
 					.getLayoutParams();
-			if (Math.abs(params.leftMargin) > width * threshold) {
+			if (Math.abs(params.topMargin) > height * threshold) {
 				return current > 0 ? current - 1 : current;
 			}
 		}
@@ -433,7 +433,7 @@ public class StackedView extends RelativeLayout {
 			return;
 		}
 		debug("Scrolling to from current: " + current + " to " + index + " ("
-				+ (isScrollingRight ? "Right" : "Left") + ")");
+				+ (isScrollingBottom ? "bottom" : "top") + ")");
 		new Thread(getScroller(index)).start();
 	}
 
@@ -446,7 +446,7 @@ public class StackedView extends RelativeLayout {
 	}
 
 	//canceled = true 回滚到当前index
-	//canceled = false 滚动到下一个或者上一个位置或者是不滚动。下一个还是上一个位置，取决与滚动的方向 isScrollingRight
+	//canceled = false 滚动到下一个或者上一个位置或者是不滚动。下一个还是上一个位置，取决与滚动的方向 isScrollingbottom
 	private void scrollToInternal(boolean canceled) {
 		int nextIndex = scrollTestInternal();
 		if (!canceled) {
@@ -471,18 +471,18 @@ public class StackedView extends RelativeLayout {
 		@Override
 		public synchronized void run() {
 			setIsScrolling(true);
-			if (isScrollingRight) {
+			if (isScrollingBottom) {
 				if (current + 1 > size - 1) {
 					isPrepared = false;
 					setIsScrolling(false);
 					return;
 				}
-				debug((" Scrolling ") + ("Left") + " Currnet: " + current);
+				debug((" Scrolling ") + ("top") + " Currnet: " + current);
 
 				final RelativeLayout.LayoutParams params = (LayoutParams) views[current + 1]
 						.getLayoutParams();
 
-				int totalDistance = params.leftMargin; // >0
+				int totalDistance = params.topMargin; // >0
 
 				int distance = Math.abs(totalDistance / duration);
 
@@ -490,11 +490,11 @@ public class StackedView extends RelativeLayout {
 					distance = 1;
 				}
 				boolean needsMore;
-				needsMore = params.leftMargin > 0;
+				needsMore = params.topMargin > 0;
 				while (needsMore) {
-					params.leftMargin += -distance;
-					params.rightMargin = -params.leftMargin;
-					needsMore = params.leftMargin > 0;
+					params.topMargin += -distance;
+					params.bottomMargin = -params.topMargin;
+					needsMore = params.topMargin > 0;
 					views[current + 1].post(new Runnable() {
 						@Override
 						public void run() {
@@ -510,7 +510,7 @@ public class StackedView extends RelativeLayout {
 				views[current + 1].post(new Runnable() {
 					@Override
 					public void run() {
-						// ScrollRight And Not restoring
+						// Scrollbottom And Not restoring
 						debug("Set Current Index to " + index);
 						current = index;
 						if (onPageChangeListener != null) {
@@ -518,8 +518,8 @@ public class StackedView extends RelativeLayout {
 						}
 						RelativeLayout.LayoutParams params = (LayoutParams) views[current]
 								.getLayoutParams();
-						params.leftMargin = 0;
-						params.rightMargin = 0;
+						params.topMargin = 0;
+						params.bottomMargin = 0;
 						views[current].setLayoutParams(params);
 						views[current].bringToFront();
 						isPrepared = false;
@@ -537,20 +537,20 @@ public class StackedView extends RelativeLayout {
 				final RelativeLayout.LayoutParams params = (LayoutParams) views[current]
 						.getLayoutParams();
 
-				debug(("  Scrolling ") + ("Right"));
+				debug(("  Scrolling ") + ("bottom"));
 
-				int totalDistance = (views[current - 1].getWidth() - params.leftMargin);
+				int totalDistance = (views[current - 1].getHeight() - params.topMargin);
 
 				int distance = Math.abs(totalDistance / duration);
 				if (distance == 0) {
 					distance = 1;
 				}
 				boolean needsMore;
-				needsMore = params.leftMargin < views[current - 1].getWidth();
+				needsMore = params.topMargin < views[current - 1].getHeight();
 				while (needsMore) {
-					params.leftMargin += distance;
-					params.rightMargin = -params.leftMargin;
-					needsMore = Math.abs(params.leftMargin) < views[current - 1].getWidth();
+					params.topMargin += distance;
+					params.bottomMargin = -params.topMargin;
+					needsMore = Math.abs(params.topMargin) < views[current - 1].getHeight();
 					views[current].post(new Runnable() {
 						@Override
 						public void run() {
@@ -566,7 +566,6 @@ public class StackedView extends RelativeLayout {
 				}
 				debug("Finished scrolling.");
 				views[current].post(new Runnable() {
-
 					@Override
 					public void run() {
 						debug("Set Current Index to " + index);
