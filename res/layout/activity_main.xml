@@ -27,7 +27,7 @@
         android:id="@+id/view3"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="#953271"
+        android:background="#40953271"
         android:gravity="center"
         android:text="@string/hello_world_3"
         android:textColor="#ffffffff"

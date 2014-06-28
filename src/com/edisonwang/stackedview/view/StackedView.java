@@ -19,13 +19,13 @@ public class StackedView extends RelativeLayout {
 
 	private int duration = 250;
 
-	private float mLastMotionX;
+	private float mLastMotionY;
 
 	private int mActivePointerId;
 
 	private View[] views;
 
-	private int size;
+	private int size;//子view数量
 
 	private int current;
 
@@ -43,7 +43,7 @@ public class StackedView extends RelativeLayout {
 
 	private OnPageChangeListener onPageChangeListener;
 
-	private boolean scrollingByTouch = true;
+	private boolean scrollingByTouch = true;//是否根据手势进行滚动
 
 	public StackedView(Context context) {
 		super(context);
@@ -135,14 +135,14 @@ public class StackedView extends RelativeLayout {
 		final int action = ev.getAction();
 		switch (action) {
 		case MotionEvent.ACTION_DOWN: {
-			mLastMotionX = ev.getX();
+			mLastMotionY = ev.getY();
 			mActivePointerId = MotionEventCompat.getPointerId(ev, 0);
 			break;
 		}
 		case MotionEventCompat.ACTION_POINTER_DOWN: {
 			final int index = MotionEventCompat.getActionIndex(ev);
-			final float x = MotionEventCompat.getX(ev, index);
-			mLastMotionX = x;
+			final float y = MotionEventCompat.getY(ev, index);
+			mLastMotionY = y;
 			mActivePointerId = MotionEventCompat.getPointerId(ev, index);
 			break;
 		}
@@ -168,15 +168,15 @@ public class StackedView extends RelativeLayout {
 		switch (action) {
 		case MotionEvent.ACTION_DOWN: {
 			debug("Down detected");
-			mLastMotionX = ev.getX();
+			mLastMotionY = ev.getY();
 			mActivePointerId = MotionEventCompat.getPointerId(ev, 0);
 		}
 		case MotionEventCompat.ACTION_POINTER_DOWN: {
 			debug("Pointer Down detected");
 			callSuper = true;
 			final int index = MotionEventCompat.getActionIndex(ev);
-			final float x = MotionEventCompat.getX(ev, index);
-			mLastMotionX = x;
+			final float y = MotionEventCompat.getY(ev, index);
+			mLastMotionY = y;
 			mActivePointerId = MotionEventCompat.getPointerId(ev, index);
 			break;
 		}
@@ -185,13 +185,15 @@ public class StackedView extends RelativeLayout {
 			if (!scrollingByTouch) {
 				break;
 			}
+			
+			//如果滚动动画没有在执行，则根据手势滚动
 			if ((!isScrolling) && mActivePointerId != -1) {
 				// Scroll to follow the motion event
 				final int activePointerIndex = MotionEventCompat
 						.findPointerIndex(ev, mActivePointerId);
-				final float x = MotionEventCompat.getX(ev, activePointerIndex);
-				fixZzIndex(mLastMotionX - x);
-				mLastMotionX = x;
+				final float y = MotionEventCompat.getY(ev, activePointerIndex);
+				fixZzIndex(mLastMotionY - y);
+				mLastMotionY = y;
 			} else {
 				debug("Did not perform move because scrolling :" + isScrolling
 						+ " and pointerId: " + mActivePointerId);
@@ -214,7 +216,7 @@ public class StackedView extends RelativeLayout {
 				// This was our active pointer going up. Choose a new
 				// active pointer and adjust accordingly.
 				final int newPointerIndex = pointerIndex == 0 ? 1 : 0;
-				mLastMotionX = ev.getX(newPointerIndex);
+				mLastMotionY = ev.getY(newPointerIndex);
 				mActivePointerId = MotionEventCompat.getPointerId(ev,
 						newPointerIndex);
 				callSuper = true;
@@ -361,6 +363,7 @@ public class StackedView extends RelativeLayout {
 		this.isPrepared = true;
 	}
 
+	//根据deltaX实时滚动
 	private void fixZzIndex(float deltaX) {
 		debug("Moving and Fixing Index.");
 		boolean toLeft = deltaX < 0;
@@ -397,7 +400,7 @@ public class StackedView extends RelativeLayout {
 
 	/**
 	 * 
-	 * @return index if needs to snap, else return -1.
+	 * @return index if needs to snap, else return -1.返回可以滚动到的位置
 	 */
 	private int scrollTestInternal() {
 		final int width = views[current].getWidth();
@@ -442,6 +445,8 @@ public class StackedView extends RelativeLayout {
 		return scroller;
 	}
 
+	//canceled = true 回滚到当前index
+	//canceled = false 滚动到下一个或者上一个位置或者是不滚动。下一个还是上一个位置，取决与滚动的方向 isScrollingRight
 	private void scrollToInternal(boolean canceled) {
 		int nextIndex = scrollTestInternal();
 		if (!canceled) {
@@ -459,7 +464,7 @@ public class StackedView extends RelativeLayout {
 
 	public class ScrollerRunner implements Runnable {
 
-		public int index;
+		public int index;//这是目标index
 
 		@Override
 		public synchronized void run() {
