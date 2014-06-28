@@ -454,7 +454,9 @@ public class StackedView extends RelativeLayout {
 				scrollTo(nextIndex);
 			}
 		} else {
-			scrollTo(current);
+			if (nextIndex >= 0) {
+				scrollTo(current);
+			}
 		}
 	}
 
@@ -468,7 +470,6 @@ public class StackedView extends RelativeLayout {
 
 		@Override
 		public synchronized void run() {
-			final boolean isRestoring = current == index;
 			setIsScrolling(true);
 			if (isScrollingRight) {
 				if (current + 1 > size - 1) {
@@ -476,44 +477,29 @@ public class StackedView extends RelativeLayout {
 					setIsScrolling(false);
 					return;
 				}
-				debug((isRestoring ? " Restoring " : " Scrolling ")
-						+ (isRestoring ? "Right" : "Left") + " Currnet: "
-						+ current);
+				debug((" Scrolling ") + ("Left") + " Currnet: " + current);
 
 				final RelativeLayout.LayoutParams params = (LayoutParams) views[current + 1]
 						.getLayoutParams();
 
-				int totalDistance = isRestoring ? (views[current].getWidth() - params.leftMargin)
-						: (params.leftMargin); // >0
+				int totalDistance = params.leftMargin; // >0
 
-				int distance = Math.abs(totalDistance
-						/ (isRestoring ? duration / 3 : duration));
+				int distance = Math.abs(totalDistance / duration);
 
 				if (distance == 0) {
 					distance = 1;
 				}
 				boolean needsMore;
-				if (isRestoring) {
-					needsMore = params.leftMargin < views[current].getWidth();
-				} else {
-					needsMore = params.leftMargin > 0;
-				}
+				needsMore = params.leftMargin > 0;
 				while (needsMore) {
-					params.leftMargin += isRestoring ? distance : -distance;
+					params.leftMargin += -distance;
 					params.rightMargin = -params.leftMargin;
-					if (isRestoring) {
-						needsMore = params.leftMargin < views[current]
-								.getWidth();
-					} else {
-						needsMore = params.leftMargin > 0;
-					}
+					needsMore = params.leftMargin > 0;
 					views[current + 1].post(new Runnable() {
-
 						@Override
 						public void run() {
 							views[current + 1].setLayoutParams(params);
 						}
-
 					});
 					try {
 						Thread.sleep(1);
@@ -522,29 +508,20 @@ public class StackedView extends RelativeLayout {
 					}
 				}
 				views[current + 1].post(new Runnable() {
-
 					@Override
 					public void run() {
 						// ScrollRight And Not restoring
-						if (isRestoring) {
-							RelativeLayout.LayoutParams params = (LayoutParams) views[current + 1]
-									.getLayoutParams();
-							params.leftMargin = views[current].getWidth();
-							params.rightMargin = -params.leftMargin;
-							views[current + 1].setLayoutParams(params);
-						} else {
-							debug("Set Current Index to " + index);
-							current = index;
-							if (onPageChangeListener != null) {
-								onPageChangeListener.onPageSelected(index);
-							}
-							RelativeLayout.LayoutParams params = (LayoutParams) views[current]
-									.getLayoutParams();
-							params.leftMargin = 0;
-							params.rightMargin = 0;
-							views[current].setLayoutParams(params);
-							views[current].bringToFront();
+						debug("Set Current Index to " + index);
+						current = index;
+						if (onPageChangeListener != null) {
+							onPageChangeListener.onPageSelected(index);
 						}
+						RelativeLayout.LayoutParams params = (LayoutParams) views[current]
+								.getLayoutParams();
+						params.leftMargin = 0;
+						params.rightMargin = 0;
+						views[current].setLayoutParams(params);
+						views[current].bringToFront();
 						isPrepared = false;
 						setIsScrolling(false);
 					}
@@ -560,35 +537,21 @@ public class StackedView extends RelativeLayout {
 				final RelativeLayout.LayoutParams params = (LayoutParams) views[current]
 						.getLayoutParams();
 
-				debug((isRestoring ? "  Restoring " : "  Scrolling ")
-						+ (isRestoring ? "Left" : "Right"));
+				debug(("  Scrolling ") + ("Right"));
 
-				int totalDistance = isRestoring ? (params.leftMargin)
-						: (views[current - 1].getWidth() - params.leftMargin);
+				int totalDistance = (views[current - 1].getWidth() - params.leftMargin);
 
-				int distance = Math.abs(totalDistance
-						/ (isRestoring ? duration / 3 : duration));
+				int distance = Math.abs(totalDistance / duration);
 				if (distance == 0) {
 					distance = 1;
 				}
 				boolean needsMore;
-				if (isRestoring) {
-					needsMore = params.leftMargin > 0;
-				} else {
-					needsMore = params.leftMargin < views[current - 1]
-							.getWidth();
-				}
+				needsMore = params.leftMargin < views[current - 1].getWidth();
 				while (needsMore) {
-					params.leftMargin += isRestoring ? -distance : distance;
+					params.leftMargin += distance;
 					params.rightMargin = -params.leftMargin;
-					if (isRestoring) {
-						needsMore = params.leftMargin > 0;
-					} else {
-						needsMore = Math.abs(params.leftMargin) < views[current - 1]
-								.getWidth();
-					}
+					needsMore = Math.abs(params.leftMargin) < views[current - 1].getWidth();
 					views[current].post(new Runnable() {
-
 						@Override
 						public void run() {
 							views[current].setLayoutParams(params);
@@ -606,23 +569,14 @@ public class StackedView extends RelativeLayout {
 
 					@Override
 					public void run() {
-						// ScrollRight And Not restoring
-						if (isRestoring) {
-							RelativeLayout.LayoutParams params = (LayoutParams) views[current]
-									.getLayoutParams();
-							params.leftMargin = 0;
-							params.rightMargin = 0;
-							views[current].setLayoutParams(params);
-						} else {
-							debug("Set Current Index to " + index);
-							views[current].setVisibility(View.GONE);
-							current = index;
-							if (onPageChangeListener != null) {
-								onPageChangeListener.onPageSelected(index);
-							}
-							views[current].setVisibility(View.VISIBLE);
-							views[current].bringToFront();
+						debug("Set Current Index to " + index);
+						views[current].setVisibility(View.GONE);
+						current = index;
+						if (onPageChangeListener != null) {
+							onPageChangeListener.onPageSelected(index);
 						}
+						views[current].setVisibility(View.VISIBLE);
+						views[current].bringToFront();
 						isPrepared = false;
 						setIsScrolling(false);
 					}
