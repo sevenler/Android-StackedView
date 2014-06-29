@@ -44,6 +44,7 @@ public class StackedView extends RelativeLayout {
 	private OnPageChangeListener onPageChangeListener;
 
 	private boolean scrollingByTouch = true;//是否根据手势进行滚动
+	private static int INTERVAL_HEIGHT = 100;//卡片层叠的间隔高度
 
 	public StackedView(Context context) {
 		super(context);
@@ -281,50 +282,42 @@ public class StackedView extends RelativeLayout {
 
 	private void setInitialViewIndex(int n) {
 		if (n != 0 && n >= size) {
-			throw new IllegalArgumentException(
-					"N is greater than the number of views");
+			throw new IllegalArgumentException("N is greater than the number of views");
 		}
 		for (int i = 0; i < size; i++) {
-			views[i].setVisibility(i == n ? View.VISIBLE : View.GONE);
 		}
 		current = n;
 	}
 
 	private void fixZzIndexTop(float deltaX) {
 		debug("Fix to top, current: " + current);
-		RelativeLayout.LayoutParams params = (LayoutParams) views[current]
-				.getLayoutParams();
+		RelativeLayout.LayoutParams params = (LayoutParams) views[current].getLayoutParams();
 		params.topMargin -= deltaX;
 		params.bottomMargin += deltaX;
 		views[current].setLayoutParams(params);
-		if (params.topMargin < 0) {
+		
+		if (params.topMargin < INTERVAL_HEIGHT) {
 			debug("Change to scrolling to bottom.");
 			isScrollingBottom = true;
 			prepareScrollingToBottom();
 		}
 	}
-
+	
 	private void prepareScrollingToBottom() {
 		if (topPage == current - 1) {
 			// TODO
 		}
 		debug("Prepared Scrolling To bottom");
-		RelativeLayout.LayoutParams params = (LayoutParams) views[current]
-				.getLayoutParams();
-		params.topMargin = 0;
-		params.bottomMargin = 0;
+		
+		RelativeLayout.LayoutParams params = (LayoutParams) views[current].getLayoutParams();
+		params.topMargin = INTERVAL_HEIGHT;
+		params.bottomMargin = -INTERVAL_HEIGHT;
 		views[current].setLayoutParams(params);
 		if (current < size - 1) {
 			params = (LayoutParams) views[current + 1].getLayoutParams();
-			params.topMargin = views[current].getWidth();
+			params.topMargin = views[current].getWidth() - INTERVAL_HEIGHT;
 			params.bottomMargin = -params.topMargin;
-			views[current].bringToFront();
 			views[current + 1].setLayoutParams(params);
-			views[current + 1].setVisibility(View.VISIBLE);
-			views[current + 1].bringToFront();
-		}
-		if (current >= 1) {
-			views[current - 1].setVisibility(View.GONE);
 		}
 		this.isPrepared = true;
 	}
@@ -333,13 +326,12 @@ public class StackedView extends RelativeLayout {
 		debug("Fix to bottom, current: " + current);
 		// Move
 		if (current < size - 1) {
-			RelativeLayout.LayoutParams params = (LayoutParams) views[current + 1]
-					.getLayoutParams();
+			RelativeLayout.LayoutParams params = (LayoutParams) views[current + 1].getLayoutParams();
 			params.topMargin -= deltaX;
 			params.bottomMargin += deltaX;
 			views[current + 1].setLayoutParams(params);
 			// Test
-			if (params.topMargin > views[current].getHeight()) {
+			if (params.topMargin > views[current].getHeight() - INTERVAL_HEIGHT) {
 				isScrollingBottom = false;
 				prepareScrollingToTop();
 			}
@@ -352,20 +344,13 @@ public class StackedView extends RelativeLayout {
 
 	private void prepareScrollingToTop() {
 		debug("Prepared Scrolling To top");
-		if (current > 0) {
-			views[current - 1].bringToFront();
-			views[current - 1].setVisibility(View.VISIBLE);
-		}
-		views[current].bringToFront();
-		if (current < size - 1) {
-			views[current + 1].setVisibility(View.GONE);
-		}
 		this.isPrepared = true;
 	}
 
 	//根据deltaX实时滚动
 	private void fixZzIndex(float deltaX) {
 		debug("Moving and Fixing Index.");
+		
 		boolean toTop = deltaX < 0;
 		boolean toBottom = deltaX > 0;
 		if (toBottom) {
@@ -392,7 +377,7 @@ public class StackedView extends RelativeLayout {
 		}
 		if (isPrepared && isScrollingBottom) {
 			fixZzIndexBottom(deltaX);
-		} else {
+		} else {//TODO isPrepared判断
 			fixZzIndexTop(deltaX);
 		}
 
@@ -408,15 +393,13 @@ public class StackedView extends RelativeLayout {
 			if (current >= size - 1) {
 				return -1;
 			}
-			RelativeLayout.LayoutParams params = (LayoutParams) views[current + 1]
-					.getLayoutParams();
-			if (Math.abs(params.topMargin) <= height * (1 - threshold)) {
+			RelativeLayout.LayoutParams params = (LayoutParams) views[current + 1].getLayoutParams();
+			if (Math.abs(params.topMargin) <= height * (1 - threshold)  - INTERVAL_HEIGHT) {
 				return current < size - 1 ? current + 1 : current;
 			}
 		} else {
-			RelativeLayout.LayoutParams params = (LayoutParams) views[current]
-					.getLayoutParams();
-			if (Math.abs(params.topMargin) > height * threshold) {
+			RelativeLayout.LayoutParams params = (LayoutParams) views[current].getLayoutParams();
+			if (Math.abs(params.topMargin) > height * threshold + INTERVAL_HEIGHT) {
 				return current > 0 ? current - 1 : current;
 			}
 		}
@@ -434,6 +417,7 @@ public class StackedView extends RelativeLayout {
 		}
 		debug("Scrolling to from current: " + current + " to " + index + " ("
 				+ (isScrollingBottom ? "bottom" : "top") + ")");
+		
 		new Thread(getScroller(index)).start();
 	}
 
@@ -479,22 +463,20 @@ public class StackedView extends RelativeLayout {
 				}
 				debug((" Scrolling ") + ("top") + " Currnet: " + current);
 
-				final RelativeLayout.LayoutParams params = (LayoutParams) views[current + 1]
-						.getLayoutParams();
+				final RelativeLayout.LayoutParams params = (LayoutParams) views[current + 1].getLayoutParams();
 
-				int totalDistance = params.topMargin; // >0
-
+				int totalDistance = params.topMargin -  INTERVAL_HEIGHT; // >0
 				int distance = Math.abs(totalDistance / duration);
 
 				if (distance == 0) {
 					distance = 1;
 				}
 				boolean needsMore;
-				needsMore = params.topMargin > 0;
+				needsMore = params.topMargin -  INTERVAL_HEIGHT > 0;
 				while (needsMore) {
 					params.topMargin += -distance;
 					params.bottomMargin = -params.topMargin;
-					needsMore = params.topMargin > 0;
+					needsMore = params.topMargin > INTERVAL_HEIGHT;
 					views[current + 1].post(new Runnable() {
 						@Override
 						public void run() {
@@ -510,7 +492,6 @@ public class StackedView extends RelativeLayout {
 				views[current + 1].post(new Runnable() {
 					@Override
 					public void run() {
-						// Scrollbottom And Not restoring
 						debug("Set Current Index to " + index);
 						current = index;
 						if (onPageChangeListener != null) {
@@ -518,10 +499,9 @@ public class StackedView extends RelativeLayout {
 						}
 						RelativeLayout.LayoutParams params = (LayoutParams) views[current]
 								.getLayoutParams();
-						params.topMargin = 0;
-						params.bottomMargin = 0;
+						params.topMargin = INTERVAL_HEIGHT;
+						params.bottomMargin = -INTERVAL_HEIGHT;
 						views[current].setLayoutParams(params);
-						views[current].bringToFront();
 						isPrepared = false;
 						setIsScrolling(false);
 					}
@@ -534,29 +514,25 @@ public class StackedView extends RelativeLayout {
 					return;
 				}
 
-				final RelativeLayout.LayoutParams params = (LayoutParams) views[current]
-						.getLayoutParams();
-
+				final RelativeLayout.LayoutParams params = (LayoutParams) views[current].getLayoutParams();
 				debug(("  Scrolling ") + ("bottom"));
 
-				int totalDistance = (views[current - 1].getHeight() - params.topMargin);
-
+				int totalDistance = (views[current - 1].getHeight() - params.topMargin - INTERVAL_HEIGHT);
 				int distance = Math.abs(totalDistance / duration);
 				if (distance == 0) {
 					distance = 1;
 				}
 				boolean needsMore;
-				needsMore = params.topMargin < views[current - 1].getHeight();
+				needsMore = params.topMargin < views[current - 1].getHeight() - INTERVAL_HEIGHT;
 				while (needsMore) {
 					params.topMargin += distance;
 					params.bottomMargin = -params.topMargin;
-					needsMore = Math.abs(params.topMargin) < views[current - 1].getHeight();
+					needsMore = Math.abs(params.topMargin) < views[current - 1].getHeight() - INTERVAL_HEIGHT;
 					views[current].post(new Runnable() {
 						@Override
 						public void run() {
 							views[current].setLayoutParams(params);
 						}
-
 					});
 					try {
 						Thread.sleep(1);
@@ -569,13 +545,10 @@ public class StackedView extends RelativeLayout {
 					@Override
 					public void run() {
 						debug("Set Current Index to " + index);
-						views[current].setVisibility(View.GONE);
 						current = index;
 						if (onPageChangeListener != null) {
 							onPageChangeListener.onPageSelected(index);
 						}
-						views[current].setVisibility(View.VISIBLE);
-						views[current].bringToFront();
 						isPrepared = false;
 						setIsScrolling(false);
 					}
