@@ -3,34 +3,31 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent" >
 
-    <TextView
+    <ImageView
         android:id="@+id/view1"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="#328E2F"
         android:gravity="center"
-        android:text="@string/hello_world_1"
-        android:textColor="#ffffffff"
+        android:scaleType="centerCrop"
+        android:src="@drawable/card_1"
         tools:context=".MainActivity" />
 
-    <TextView
+    <ImageView
         android:id="@+id/view2"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="#A3C0E0"
         android:gravity="center"
-        android:text="@string/hello_world_2"
-        android:textColor="#ffffffff"
+        android:scaleType="centerCrop"
+        android:src="@drawable/card_2"
         tools:context=".MainActivity" />
 
-    <TextView
+    <ImageView
         android:id="@+id/view3"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="#40953271"
         android:gravity="center"
-        android:text="@string/hello_world_3"
-        android:textColor="#ffffffff"
+        android:scaleType="centerCrop"
+        android:src="@drawable/card_3"
         tools:context=".MainActivity" />
 
 </RelativeLayout>

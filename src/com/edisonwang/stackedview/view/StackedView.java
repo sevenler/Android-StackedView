@@ -44,7 +44,8 @@ public class StackedView extends RelativeLayout {
 	private OnPageChangeListener onPageChangeListener;
 
 	private boolean scrollingByTouch = true;//是否根据手势进行滚动
-	private static int INTERVAL_HEIGHT = 100;//卡片层叠的间隔高度
+	private static int INTERVAL_BOTTOM_HEIGHT = 100;//卡片层叠的底部间隔高度
+	private static int INTERVAL_TOP_HEIGHT = 0;//卡片层叠的顶部间隔高度
 
 	public StackedView(Context context) {
 		super(context);
@@ -199,14 +200,13 @@ public class StackedView extends RelativeLayout {
 				debug("Did not perform move because scrolling :" + isScrolling
 						+ " and pointerId: " + mActivePointerId);
 			}
-			scrollToInternal(false);
 			break;
 		}
-		case MotionEvent.ACTION_UP:
-		case MotionEvent.ACTION_CANCEL: {
+		case MotionEvent.ACTION_CANCEL:
+		case MotionEvent.ACTION_UP: {
 			debug("Pointer Up or Cancel detected");
 			mActivePointerId = -1;
-			scrollToInternal(true);
+			scrollToInternal();
 			break;
 		}
 		case MotionEvent.ACTION_POINTER_UP: {
@@ -296,7 +296,7 @@ public class StackedView extends RelativeLayout {
 		params.bottomMargin += deltaX;
 		views[current].setLayoutParams(params);
 		
-		if (params.topMargin < INTERVAL_HEIGHT) {
+		if (params.topMargin < INTERVAL_TOP_HEIGHT) {
 			debug("Change to scrolling to bottom.");
 			isScrollingBottom = true;
 			prepareScrollingToBottom();
@@ -310,12 +310,12 @@ public class StackedView extends RelativeLayout {
 		debug("Prepared Scrolling To bottom");
 		
 		RelativeLayout.LayoutParams params = (LayoutParams) views[current].getLayoutParams();
-		params.topMargin = INTERVAL_HEIGHT;
-		params.bottomMargin = -INTERVAL_HEIGHT;
+		params.topMargin = INTERVAL_TOP_HEIGHT;
+		params.bottomMargin = -INTERVAL_TOP_HEIGHT;
 		views[current].setLayoutParams(params);
 		if (current < size - 1) {
 			params = (LayoutParams) views[current + 1].getLayoutParams();
-			params.topMargin = views[current].getWidth() - INTERVAL_HEIGHT;
+			params.topMargin = views[current].getWidth() - INTERVAL_BOTTOM_HEIGHT;
 			params.bottomMargin = -params.topMargin;
 			views[current + 1].setLayoutParams(params);
 		}
@@ -331,7 +331,7 @@ public class StackedView extends RelativeLayout {
 			params.bottomMargin += deltaX;
 			views[current + 1].setLayoutParams(params);
 			// Test
-			if (params.topMargin > views[current].getHeight() - INTERVAL_HEIGHT) {
+			if (params.topMargin > views[current].getHeight() - INTERVAL_BOTTOM_HEIGHT) {
 				isScrollingBottom = false;
 				prepareScrollingToTop();
 			}
@@ -339,7 +339,6 @@ public class StackedView extends RelativeLayout {
 			isScrollingBottom = false;
 			prepareScrollingToTop();
 		}
-
 	}
 
 	private void prepareScrollingToTop() {
@@ -394,12 +393,12 @@ public class StackedView extends RelativeLayout {
 				return -1;
 			}
 			RelativeLayout.LayoutParams params = (LayoutParams) views[current + 1].getLayoutParams();
-			if (Math.abs(params.topMargin) <= height * (1 - threshold)  - INTERVAL_HEIGHT) {
+			if (Math.abs(params.topMargin) <= height * (1 - threshold)  - INTERVAL_BOTTOM_HEIGHT) {
 				return current < size - 1 ? current + 1 : current;
 			}
 		} else {
 			RelativeLayout.LayoutParams params = (LayoutParams) views[current].getLayoutParams();
-			if (Math.abs(params.topMargin) > height * threshold + INTERVAL_HEIGHT) {
+			if (Math.abs(params.topMargin) > height * threshold + INTERVAL_TOP_HEIGHT) {
 				return current > 0 ? current - 1 : current;
 			}
 		}
@@ -431,16 +430,12 @@ public class StackedView extends RelativeLayout {
 
 	//canceled = true 回滚到当前index
 	//canceled = false 滚动到下一个或者上一个位置或者是不滚动。下一个还是上一个位置，取决与滚动的方向 isScrollingbottom
-	private void scrollToInternal(boolean canceled) {
+	private void scrollToInternal() {
 		int nextIndex = scrollTestInternal();
-		if (!canceled) {
-			if (nextIndex >= 0) {
-				scrollTo(nextIndex);
-			}
-		} else {
-			if (nextIndex >= 0) {
-				scrollTo(current);
-			}
+		if (nextIndex >= 0 && nextIndex != current) {
+			scrollTo(nextIndex);
+		}else{
+//			scrollTo(current);
 		}
 	}
 
@@ -465,18 +460,18 @@ public class StackedView extends RelativeLayout {
 
 				final RelativeLayout.LayoutParams params = (LayoutParams) views[current + 1].getLayoutParams();
 
-				int totalDistance = params.topMargin -  INTERVAL_HEIGHT; // >0
+				int totalDistance = params.topMargin -  INTERVAL_TOP_HEIGHT; // >0
 				int distance = Math.abs(totalDistance / duration);
 
 				if (distance == 0) {
 					distance = 1;
 				}
 				boolean needsMore;
-				needsMore = params.topMargin -  INTERVAL_HEIGHT > 0;
+				needsMore = params.topMargin -  INTERVAL_TOP_HEIGHT > 0;
 				while (needsMore) {
 					params.topMargin += -distance;
 					params.bottomMargin = -params.topMargin;
-					needsMore = params.topMargin > INTERVAL_HEIGHT;
+					needsMore = params.topMargin > INTERVAL_TOP_HEIGHT;
 					views[current + 1].post(new Runnable() {
 						@Override
 						public void run() {
@@ -499,8 +494,8 @@ public class StackedView extends RelativeLayout {
 						}
 						RelativeLayout.LayoutParams params = (LayoutParams) views[current]
 								.getLayoutParams();
-						params.topMargin = INTERVAL_HEIGHT;
-						params.bottomMargin = -INTERVAL_HEIGHT;
+						params.topMargin = INTERVAL_TOP_HEIGHT;
+						params.bottomMargin = -INTERVAL_TOP_HEIGHT;
 						views[current].setLayoutParams(params);
 						isPrepared = false;
 						setIsScrolling(false);
@@ -517,17 +512,17 @@ public class StackedView extends RelativeLayout {
 				final RelativeLayout.LayoutParams params = (LayoutParams) views[current].getLayoutParams();
 				debug(("  Scrolling ") + ("bottom"));
 
-				int totalDistance = (views[current - 1].getHeight() - params.topMargin - INTERVAL_HEIGHT);
+				int totalDistance = (views[current - 1].getHeight() - params.topMargin - INTERVAL_BOTTOM_HEIGHT);
 				int distance = Math.abs(totalDistance / duration);
 				if (distance == 0) {
 					distance = 1;
 				}
 				boolean needsMore;
-				needsMore = params.topMargin < views[current - 1].getHeight() - INTERVAL_HEIGHT;
+				needsMore = params.topMargin < views[current - 1].getHeight() - INTERVAL_BOTTOM_HEIGHT;
 				while (needsMore) {
 					params.topMargin += distance;
 					params.bottomMargin = -params.topMargin;
-					needsMore = Math.abs(params.topMargin) < views[current - 1].getHeight() - INTERVAL_HEIGHT;
+					needsMore = Math.abs(params.topMargin) < views[current - 1].getHeight() - INTERVAL_BOTTOM_HEIGHT;
 					views[current].post(new Runnable() {
 						@Override
 						public void run() {
