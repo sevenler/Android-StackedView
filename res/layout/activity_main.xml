@@ -29,5 +29,23 @@
         android:scaleType="centerCrop"
         android:src="@drawable/card_3"
         tools:context=".MainActivity" />
+    
+    <ImageView
+        android:id="@+id/view4"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:scaleType="centerCrop"
+        android:src="@drawable/card_2"
+        tools:context=".MainActivity" />
+    
+    <ImageView
+        android:id="@+id/view5"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:scaleType="centerCrop"
+        android:src="@drawable/card_1"
+        tools:context=".MainActivity" />
 
 </RelativeLayout>

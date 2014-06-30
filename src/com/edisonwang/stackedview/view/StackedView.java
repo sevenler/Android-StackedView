@@ -315,7 +315,8 @@ public class StackedView extends RelativeLayout {
 		views[current].setLayoutParams(params);
 		if (current < size - 1) {
 			params = (LayoutParams) views[current + 1].getLayoutParams();
-			params.topMargin = views[current].getWidth() - INTERVAL_BOTTOM_HEIGHT;
+			
+			params.topMargin = views[current].getWidth() - (int)(((size - current - 1) * 1 + 1) * INTERVAL_BOTTOM_HEIGHT);
 			params.bottomMargin = -params.topMargin;
 			views[current + 1].setLayoutParams(params);
 		}
@@ -331,7 +332,7 @@ public class StackedView extends RelativeLayout {
 			params.bottomMargin += deltaX;
 			views[current + 1].setLayoutParams(params);
 			// Test
-			if (params.topMargin > views[current].getHeight() - INTERVAL_BOTTOM_HEIGHT) {
+			if (params.topMargin > views[current].getHeight() - (int)(((size - current - 1) * 1 + 1) * INTERVAL_BOTTOM_HEIGHT)) {
 				isScrollingBottom = false;
 				prepareScrollingToTop();
 			}
@@ -512,17 +513,17 @@ public class StackedView extends RelativeLayout {
 				final RelativeLayout.LayoutParams params = (LayoutParams) views[current].getLayoutParams();
 				debug(("  Scrolling ") + ("bottom"));
 
-				int totalDistance = (views[current - 1].getHeight() - params.topMargin - INTERVAL_BOTTOM_HEIGHT);
+				int totalDistance = (views[current - 1].getHeight() - params.topMargin - (int)(((size - current - 1) * 1 + 1) * INTERVAL_BOTTOM_HEIGHT));
 				int distance = Math.abs(totalDistance / duration);
 				if (distance == 0) {
 					distance = 1;
 				}
 				boolean needsMore;
-				needsMore = params.topMargin < views[current - 1].getHeight() - INTERVAL_BOTTOM_HEIGHT;
+				needsMore = params.topMargin < views[current - 1].getHeight() - (int)(((size - current - 1) * 1 + 1) * INTERVAL_BOTTOM_HEIGHT);
 				while (needsMore) {
 					params.topMargin += distance;
 					params.bottomMargin = -params.topMargin;
-					needsMore = Math.abs(params.topMargin) < views[current - 1].getHeight() - INTERVAL_BOTTOM_HEIGHT;
+					needsMore = Math.abs(params.topMargin) < views[current - 1].getHeight() - (int)(((size - current - 1) * 1 + 1) * INTERVAL_BOTTOM_HEIGHT);
 					views[current].post(new Runnable() {
 						@Override
 						public void run() {
