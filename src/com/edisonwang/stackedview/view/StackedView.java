@@ -443,6 +443,46 @@ public class StackedView extends RelativeLayout {
 	private static void debug(String msg) {
 		Log.i(TAG, msg);
 	}
+	
+	private void onScrollBottom(int distance, int step, int total, int index){
+//		System.out.println(String.format("onScrollBottom distance:%s total:%s  index:%s", distance, total, index));
+		int height = views[index].getHeight();
+		for(int i = index + 1; i <= size - 1; i++){
+			final RelativeLayout.LayoutParams params = (LayoutParams) views[i].getLayoutParams();
+			int targetTopMargin = (int)(((size - i - 1) * 1 + 1) * INTERVAL_BOTTOM_HEIGHT);
+			int move = (height - targetTopMargin) + distance * targetTopMargin / total ;
+			final int in = i;
+			params.topMargin = move;
+			params.bottomMargin = -params.topMargin;
+			views[in].post(new Runnable() {
+				@Override
+				public void run() {
+					views[in].setLayoutParams(params);
+				}
+			});
+		}
+	}
+	
+	private void onScrollTop(int distance, int step, int total, int index){
+//		System.out.println(String.format("onScrollBottom distance:%s total:%s  index:%s", distance, total, index));
+		int height = views[index].getHeight();
+		for(int i = index + 1; i <= size - 1; i++){
+			final RelativeLayout.LayoutParams params = (LayoutParams) views[i].getLayoutParams();
+			int targetTopMargin = (int)(((size - i - 1) * 1 + 1) * INTERVAL_BOTTOM_HEIGHT);
+
+			if(total == distance) continue;//total == distance 导致move计算的除数为0
+			float move = targetTopMargin * ((1 - (float)distance / total) / ((float)total / distance - 1)) + height - targetTopMargin;
+			params.topMargin = (int)move;
+			params.bottomMargin = -params.topMargin;
+			final int in = i;
+			views[in].post(new Runnable() {
+				@Override
+				public void run() {
+					views[in].setLayoutParams(params);
+				}
+			});
+		}
+	}
 
 	public class ScrollerRunner implements Runnable {
 
@@ -469,6 +509,7 @@ public class StackedView extends RelativeLayout {
 				}
 				boolean needsMore;
 				needsMore = params.topMargin -  INTERVAL_TOP_HEIGHT > 0;
+				int begin = params.topMargin;
 				while (needsMore) {
 					params.topMargin += -distance;
 					params.bottomMargin = -params.topMargin;
@@ -479,6 +520,7 @@ public class StackedView extends RelativeLayout {
 							views[current + 1].setLayoutParams(params);
 						}
 					});
+					onScrollBottom(begin - params.topMargin, distance, totalDistance, current + 1);
 					try {
 						Thread.sleep(1);
 					} catch (InterruptedException e) {
@@ -520,6 +562,7 @@ public class StackedView extends RelativeLayout {
 				}
 				boolean needsMore;
 				needsMore = params.topMargin < views[current - 1].getHeight() - (int)(((size - current - 1) * 1 + 1) * INTERVAL_BOTTOM_HEIGHT);
+				int begin = params.topMargin;
 				while (needsMore) {
 					params.topMargin += distance;
 					params.bottomMargin = -params.topMargin;
@@ -530,6 +573,7 @@ public class StackedView extends RelativeLayout {
 							views[current].setLayoutParams(params);
 						}
 					});
+					onScrollTop(totalDistance - (params.topMargin - begin), distance, totalDistance, current);
 					try {
 						Thread.sleep(1);
 					} catch (InterruptedException e) {
