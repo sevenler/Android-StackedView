@@ -291,6 +291,7 @@ public class StackedView extends RelativeLayout {
 
 	private void fixZzIndexTop(float deltaX) {
 		debug("Fix to top, current: " + current);
+		
 		RelativeLayout.LayoutParams params = (LayoutParams) views[current].getLayoutParams();
 		params.topMargin -= deltaX;
 		params.bottomMargin += deltaX;
@@ -315,8 +316,7 @@ public class StackedView extends RelativeLayout {
 		views[current].setLayoutParams(params);
 		if (current < size - 1) {
 			params = (LayoutParams) views[current + 1].getLayoutParams();
-			
-			params.topMargin = views[current].getWidth() - (int)(((size - current - 1) * 1 + 1) * INTERVAL_BOTTOM_HEIGHT);
+			params.topMargin = views[current].getHeight() - (int)(((size - current - 1) * 1 + 1) * INTERVAL_BOTTOM_HEIGHT);
 			params.bottomMargin = -params.topMargin;
 			views[current + 1].setLayoutParams(params);
 		}
@@ -325,12 +325,14 @@ public class StackedView extends RelativeLayout {
 
 	private void fixZzIndexBottom(float deltaX) {
 		debug("Fix to bottom, current: " + current);
+		
 		// Move
 		if (current < size - 1) {
 			RelativeLayout.LayoutParams params = (LayoutParams) views[current + 1].getLayoutParams();
 			params.topMargin -= deltaX;
 			params.bottomMargin += deltaX;
 			views[current + 1].setLayoutParams(params);
+			
 			// Test
 			if (params.topMargin > views[current].getHeight() - (int)(((size - current - 1) * 1 + 1) * INTERVAL_BOTTOM_HEIGHT)) {
 				isScrollingBottom = false;
